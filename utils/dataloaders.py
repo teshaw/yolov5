@@ -37,6 +37,7 @@ from utils.torch_utils import torch_distributed_zero_first
 # Parameters
 HELP_URL = 'See https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 IMG_FORMATS = 'bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp', 'pfm'  # include image suffixes
+CMP_FORMATS = 'zip'
 VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'  # include video suffixes
 BAR_FORMAT = '{l_bar}{bar:10}{r_bar}{bar:-10b}'  # tqdm bar format
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
@@ -202,13 +203,16 @@ class LoadImages:
 
         images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
-        ni, nv = len(images), len(videos)
+        archives = [x for x in files if x.split('.')[-1].lower() in CMP_FORMATS]
+
+        ni, nv, nz = len(images), len(videos), len(archives)
 
         self.img_size = img_size
         self.stride = stride
-        self.files = images + videos
-        self.nf = ni + nv  # number of files
-        self.video_flag = [False] * ni + [True] * nv
+        self.files = images + archives + videos
+        self.nf = ni + nv + nz # number of files
+        self.video_flag = [False] * ni + [True] * nv + [False] * nz
+        self.archive_flag = [False] * ni + [False] * nv + [True] * nz
         self.mode = 'image'
         self.auto = auto
         self.transforms = transforms  # optional
@@ -221,6 +225,7 @@ class LoadImages:
 
     def __iter__(self):
         self.count = 0
+        self.frame = 0
         return self
 
     def __next__(self):
@@ -245,6 +250,21 @@ class LoadImages:
             # im0 = self._cv2_rotate(im0)  # for use if cv2 auto rotation is False
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: '
 
+        elif self.archive_flag[self.count]:
+            self.mode = 'archive'
+            with ZipFile(path) as archive:
+                nfiles_in_zip = len(archive.infolist())
+                if self.frame == nfiles_in_zip:
+                    self.count += 1
+                    if self.count == self.nf:  # last video
+                        raise StopIteration
+                else:
+                    zipinfo = archive.infolist()[self.frame]
+                    if zipinfo.filename.split(".")[-1] in IMG_FORMATS:
+                        thefiledata = archive.read(zipinfo)
+                        im0 = cv2.imread(thefiledata,from_buffer=True)
+                    self.frame += 1
+            s = f'archive {self.count + 1}/{self.nf} ({self.frame}/{nfiles_in_zip}) {path}: '
         else:
             # Read image
             self.count += 1

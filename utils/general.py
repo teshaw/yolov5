@@ -289,10 +289,10 @@ def check_online():
         return False
 
 
-def git_describe(path=ROOT):  # path must be a directory
+def git_describe(path=ROOT,skip=True):  # path must be a directory
     # Return human-readable git description, i.e. v5.0-5-g3e25f1e https://git-scm.com/docs/git-describe
     try:
-        assert (Path(path) / '.git').is_dir()
+        assert (Path(path) / '.git').is_dir() and not skip
         return check_output(f'git -C {path} describe --tags --long --always', shell=True).decode()[:-1]
     except Exception:
         return ''
@@ -1025,8 +1025,11 @@ def increment_path(path, exist_ok=False, sep='', mkdir=False):
 imshow_ = cv2.imshow  # copy to avoid recursion errors
 
 
-def imread(path, flags=cv2.IMREAD_COLOR):
-    return cv2.imdecode(np.fromfile(path, np.uint8), flags)
+def imread(path, flags=cv2.IMREAD_COLOR,from_buffer=False):
+    if from_buffer:
+        return cv2.imdecode(np.frombuffer(path, np.uint8), flags)
+    else:
+        return cv2.imdecode(np.fromfile(path, np.uint8), flags)
 
 
 def imwrite(path, im):

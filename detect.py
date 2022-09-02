@@ -7,7 +7,8 @@ Usage - sources:
                                                      img.jpg                         # image
                                                      vid.mp4                         # video
                                                      path/                           # directory
-                                                     'path/*.jpg'                    # glob
+                                                     file.zip       # zipfile [of images] #TODO: enable
+                                                     path/*.jpg     # glob
                                                      'https://youtu.be/Zgi9g1ksQHc'  # YouTube
                                                      'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP stream
 
@@ -79,6 +80,7 @@ def run(
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+    is_archive = source.endswith(".zip")
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
     webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
     if is_url and is_file:
@@ -93,6 +95,10 @@ def run(
     model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size(imgsz, s=stride)  # check image size
+
+    if save_txt:
+        with open(Path(save_dir,"classes.labels"),'w') as f:
+            f.write("\n".join([names.get(i,"None") for i in range(0,max(names.keys()))]))
 
     # Dataloader
     if webcam:
@@ -109,6 +115,16 @@ def run(
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
     for path, im, im0s, vid_cap, s in dataset:
+        if exist_ok and skip_existing:
+            p = Path(path)  # to Path
+            if save_img:
+                save_path = str(save_dir / p.name)  # im.jpg
+                if os.path.isfile(save_path):
+                    continue
+            elif save_txt:
+                txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+                if os.path.isfile(txt_path):
+                    continue
         with dt[0]:
             im = torch.from_numpy(im).to(device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
