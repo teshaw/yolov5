@@ -254,3 +254,11 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
+*.bak
+__init__.py
+data/amtrakMudspots160.yaml
+data/arcMudspots.yaml
+data/hyps/hyp.scratch-low.mod.yaml
+data/hyps/hyp.scratch-high.adam.yaml
+data/amtrakMudspots.yaml
+data/agileMudspots.yaml
