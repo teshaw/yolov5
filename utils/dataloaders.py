@@ -191,7 +191,11 @@ class LoadImages:
     def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None):
         files = []
         for p in sorted(path) if isinstance(path, (list, tuple)) else [path]:
-            p = str(Path(p).resolve())
+            try:
+                p = str(Path(p).resolve())
+            except OSError:
+                p = str(Path(p).parent.resolve().joinpath(Path(p).name))
+                print(p)
             if '*' in p:
                 files.extend(sorted(glob.glob(p, recursive=True)))  # glob
             elif os.path.isdir(p):
