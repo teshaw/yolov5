@@ -239,7 +239,7 @@ class LoadScreenshots:
 
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None, vid_stride=1):
+    def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None, vid_stride=1,image_sort=None):
         if isinstance(path, str) and Path(path).suffix == '.txt':  # *.txt file with img/vid/dir on each line
             path = Path(path).read_text().rsplit()
         files = []
@@ -259,6 +259,8 @@ class LoadImages:
                 raise FileNotFoundError(f'{p} does not exist')
 
         images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
+        if image_sort:
+            images = [x for x in sorted(images,key=lambda x:image_sort(x) if image_sort(x) is not None else 1E9) if image_sort(x) is not None]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
         archives = [x for x in files if x.split('.')[-1].lower() in CMP_FORMATS]
 
@@ -279,7 +281,7 @@ class LoadImages:
         else:
             self.cap = None
         assert self.nf > 0, f'No images or videos found in {p}. ' \
-                            f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
+                            f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}\narchives (of images): {CMP_FORMATS}'
 
     def __iter__(self):
         self.count = 0

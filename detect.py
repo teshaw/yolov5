@@ -34,7 +34,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-
+from tqdm import tqdm
 import torch
 
 FILE = Path(__file__).resolve()
@@ -45,11 +45,11 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams
-from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
+from utils.general import (LOGGER,set_logging, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
-from tqdm import tqdm
+
 def _tqdm(input,verbose):
     if verbose:
         return input
@@ -86,8 +86,9 @@ def run(
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
-        verbose=False, # print logging messages
         vid_stride=1,  # video frame-rate stride
+        image_sort=None,# function to parse an image name for a sorting key.
+        verbose=True,# passed to set_logging(verbose=verbose)
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -96,6 +97,7 @@ def run(
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
     webcam = source.isnumeric() or source.endswith('.streams') or (is_url and not is_file)
     screenshot = source.lower().startswith('screen')
+    set_logging(verbose=verbose)
     if is_url and is_file:
         source = check_file(source)  # download
 
@@ -111,7 +113,10 @@ def run(
 
     if save_txt:
         with open(Path(save_dir,"classes.labels"),'w') as f:
-            f.write("\n".join([names.get(i,"None") for i in range(0,max(names.keys()))]))
+            if type(names) == type([]):
+                f.write("\n".join(names))
+            elif type(names) == type({}):
+                f.write("\n".join([x[1] for x in sorted(names.items(),key=lambda x:x[0])]))
 
     # Dataloader
     bs = 1  # batch_size
@@ -122,7 +127,7 @@ def run(
     elif screenshot:
         dataset = LoadScreenshots(source, img_size=imgsz, stride=stride, auto=pt)
     else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
+        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride,image_sort=image_sort)
     vid_path, vid_writer = [None] * bs, [None] * bs
 
     # Run inference
@@ -139,6 +144,7 @@ def run(
                 txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
                 if os.path.isfile(txt_path):
                     continue
+
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -236,6 +242,7 @@ def run(
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
+
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
