@@ -170,7 +170,7 @@ class DetectionResult():
         for *xyxy,conf,cls in reversed(detections):
             cls_name = self.names[int(cls)]
             intxyxy = [int(n//1) for n in xyxy]
-            self.detections.append({'class':cls_name,
+            self.detections.append({'class':cls_name,'type':'rectangle',
                                'confidence': float(conf),
                                'guid':str(uuid4()),
                                'xyxy':intxyxy,
