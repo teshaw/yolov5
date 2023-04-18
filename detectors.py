@@ -18,19 +18,16 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device#, smart_inference_mode
 from utils.augmentations import letterbox
 
-def sorter(fp,default=1E9,reverse=False):
+def sorter(fp,default=1E9):
     _,fn = os.path.split(fp)
     if "_" in fn:
         try:
             result = int(fn.split("_",maxsplit=1)[0])
         except:
-            result =  default
+            result =  default *(-1 if reverse else 1)
     else:
         result = default
-    if reverse:
-        return default-result
-    else:
-        return result
+    return result
 
 class ImageDetector():
     def __init__(self,modelpath,*args,**kwargs):
