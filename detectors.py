@@ -24,7 +24,7 @@ def sorter(fp,default=1E9):
         try:
             result = int(fn.split("_",maxsplit=1)[0])
         except:
-            result =  default *(-1 if reverse else 1)
+            result =  default
     else:
         result = default
     return result
@@ -41,27 +41,29 @@ class ImageDetector():
         self.max_det=1000  # maximum detections per image
         self.device=''  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         # self.view_img=False,  # show results
-        self.save_txt=False  # save results to *.txt
-        self.save_conf=True  # save confidences in --save-txt labels
+        # self.save_txt=False  # save results to *.txt
+        # self.save_conf=True  # save confidences in --save-txt labels
         # self.save_crop=False  # save cropped prediction boxes
         # self.nosave=False  # do not save images/videos
         self.classes=None  # filter by class: --class 0, or --class 0 2 3
         self.agnostic_nms=False  # class-agnostic NMS
         self.augment=False  # augmented inference
-        self.visualize=False  # visualize features
+        # self.visualize=False  # visualize features
         self.update=False  # update all models
-        self.project=self.ROOT / 'runs/detect'  # save results to project/name
-        self.name='exp'  # save results to project/name
-        self.exist_ok=False  # existing project/name ok, do not increment
-        self.skip_existing=False  # Skip if image output exists
-        self.line_thickness=3  # bounding box thickness (pixels)
-        self.hide_labels=False  # hide labels
-        self.hide_conf=False  # hide confidences
+        # self.project=self.ROOT / 'runs/detect'  # save results to project/name
+        # self.name='exp'  # save results to project/name
+        # self.exist_ok=False  # existing project/name ok, do not increment
+        # self.skip_existing=False  # Skip if image output exists
+        # self.line_thickness=3  # bounding box thickness (pixels)
+        # self.hide_labels=False  # hide labels
+        # self.hide_conf=False  # hide confidences
         self.half=False  # use FP16 half-precision inference
         self.dnn=False  # use OpenCV DNN for ONNX inference
-        self.vid_stride=1  # video frame-rate stride
-        self.image_sort=None # function to parse an image name for a sorting key.
+        # self.vid_stride=1  # video frame-rate stride
+        self.image_sort=kwargs.get("image_sort",sorter) # function to parse an image name for a sorting key.
+        self.reverse=False
         self.verbose=True
+        #TODO: means of checking for existing labels...
 
         self.__load_model__()
 
@@ -85,7 +87,8 @@ class ImageDetector():
                    img_size=self.imgsz,
                    stride=self.stride,
                    auto=self.pt,
-                   image_sort=None)
+                   image_sort=self.image_sort,
+                   reverse=self.reverse)
         for i in im:
             yield i
 
