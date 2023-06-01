@@ -35,7 +35,8 @@ class ImageDetector():
         self.weights=Path(modelpath).absolute()  # model path or triton URL
         # source=self.ROOT / 'data/images'  # file/dir/URL/glob/screen/0(webcam)
         self.data=self.ROOT / 'data/coco128.yaml'  # dataset.yaml path
-        self.imgsz=(640, 640)  # inference size (height, width)
+        # self.srcimgsz=(2000,3000)
+        self._imgsz=(640, 640)  # inference size (height, width)
         self.conf_thres=0.25  # confidence threshold
         self.iou_thres=0.45  # NMS IOU threshold
         self.max_det=1000  # maximum detections per image
@@ -48,7 +49,7 @@ class ImageDetector():
         self.classes=None  # filter by class: --class 0, or --class 0 2 3
         self.agnostic_nms=False  # class-agnostic NMS
         self.augment=False  # augmented inference
-        # self.visualize=False  # visualize features
+        self.visualize=False  # visualize features
         self.update=False  # update all models
         # self.project=self.ROOT / 'runs/detect'  # save results to project/name
         # self.name='exp'  # save results to project/name
@@ -79,12 +80,13 @@ class ImageDetector():
 
     def __check_img_size__(self,imgsz=None):
         if imgsz is None:
-            imgsz = self.imgsz
-        self.imgsz = check_img_size(imgsz, s=self.stride)  # check image size
+            imgsz = self._imgsz
+        self._imgsz = check_img_size(imgsz, s=self.stride)  # check image size
+        print(f"using image size {self._imgsz}")
 
     def __imload__(self,source):
         im = LoadImages(source,
-                   img_size=self.imgsz,
+                   img_size=self._imgsz,
                    stride=self.stride,
                    auto=self.pt,
                    image_sort=self.image_sort,
@@ -104,7 +106,7 @@ class ImageDetector():
                 im = np.ascontiguousarray(im)  # contiguous
                 s = f"image 1/1 numpy array with declared path {path}"
                 return [(path, im, im0, 0, s)]
-            dataset = dummy(imgpath,self.imgsz,self.stride,self.pt,path)
+            dataset = dummy(imgpath,self._imgsz,self.stride,self.pt,path)
         else:
             dataset = self.__imload__(imgpath)
         set_logging(verbose=self.verbose)
@@ -151,7 +153,7 @@ class ImageDetector():
         # Print results
         set_logging(verbose=True)
         t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
-        LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *self.imgsz)}' % t)
+        LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *self._imgsz)}' % t)
         set_logging(verbose=self.verbose)
 
 
