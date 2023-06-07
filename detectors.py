@@ -4,6 +4,7 @@ from collections import defaultdict
 import torch
 import numpy as np
 from uuid import uuid4
+from tqdm import tqdm
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import LoadImages#,IMG_FORMATS,VID_FORMATS, LoadScreenshots, LoadStreams
@@ -111,7 +112,11 @@ class ImageDetector():
             dataset = self.__imload__(imgpath)
         set_logging(verbose=self.verbose)
         seen=0
-        for path, im, im0s, vid_cap, s in dataset:
+        if self.verbose:
+            processDataset=dataset
+        else:
+            processDataset=tqdm(dataset)
+        for path, im, im0s, vid_cap, s in processDataset:
             dt = [Profile(),]*3
             seen+=1
             with dt[0]:
