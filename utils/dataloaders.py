@@ -100,6 +100,30 @@ def seed_worker(worker_id):
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
+def try_load_image(path,attempts=10):
+    '''
+    Attempt to repeatedly load image, assuming momentary loss of network/disk access.
+    '''
+    success=False
+    attempt=0
+    calc_wait = lambda attempt: (2 ** attempt) ** 0.5
+    while not success and attempt<attempts:
+        im0 = cv2.imread(path)  # BGR
+        if im0 is None:
+            success=False
+        else:
+            success=True
+        if not success:
+            wait_time = calc_wait(attempt)
+            if not attempt:
+                # on first failure:
+                print(f'Reading image failed from {path}, will retry up to {attempts} times')
+                time_limit = sum((calc_wait(n) for n in range(attempts)))
+                print(f"Maximum total wait time estimated {time_limit:.2f} seconds")
+            attempt+=1
+            print(f"waiting for {wait_time:.2f} seconds to retry (attempt {attempt} of {attempts})")
+            time.sleep(wait_time)
+    return im0
 
 def create_dataloader(path,
                       imgsz,
@@ -332,7 +356,7 @@ class LoadImages:
         else:
             # Read image
             self.count += 1
-            im0 = cv2.imread(path)  # BGR
+            im0 = try_load_image(path,attempts=10)  # BGR
             assert im0 is not None, f'Image Not Found {path}'
             s = f'image {self.count}/{self.nf} {path}: '
 
