@@ -309,6 +309,10 @@ class LoadImages:
         assert self.nf > 0, f'No images or videos found in {p}. ' \
                             f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}\narchives (of images): {CMP_FORMATS}'
 
+
+    def __len__(self):
+        return self.nf
+
     def __iter__(self):
         self.count = 0
         self.frame = 0
