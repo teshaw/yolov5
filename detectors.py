@@ -20,6 +20,12 @@ from utils.torch_utils import select_device#, smart_inference_mode
 from utils.augmentations import letterbox
 
 def sorter(fp,default=1E9,start=0,end=1E9):
+    '''basic example sorter, which extracts a key from the filename.
+
+        Returns the key if between start/end else None.
+        If key extraction fails returns default.
+
+        '''
     _,fn = os.path.split(fp)
     if "_" in fn:
         try:
@@ -39,7 +45,7 @@ class ImageDetector():
         # source=self.ROOT / 'data/images'  # file/dir/URL/glob/screen/0(webcam)
         self.data=self.ROOT / 'data/coco128.yaml'  # dataset.yaml path
         # self.srcimgsz=(2000,3000)
-        self._imgsz=(640, 640)  # inference size (height, width)
+        self._imgsz=kwargs.get("imgsz",(640, 640))  # inference size (height, width)
         self.conf_thres=0.25  # confidence threshold
         self.iou_thres=0.45  # NMS IOU threshold
         self.max_det=1000  # maximum detections per image
@@ -67,6 +73,7 @@ class ImageDetector():
         self.image_sort=kwargs.get("image_sort",sorter) # function to parse an image name for a sorting key.
         self.reverse=False
         self.verbose=True
+        self.recursive=False
         #TODO: means of checking for existing labels...
 
         self.__load_model__()
@@ -88,16 +95,30 @@ class ImageDetector():
         print(f"using image size {self._imgsz}")
 
     def __imload__(self,source):
-        im = LoadImages(source,
-                   img_size=self._imgsz,
-                   stride=self.stride,
-                   auto=self.pt,
-                   image_sort=self.image_sort,
-                   reverse=self.reverse)
-        for i in im:
-            yield i
+        if self.recursive:
+            sources=[]
+            for root,_,files in os.walk(source):
+                if files:
+                    sources.append(root)
+        else:
+            sources=[source]
 
-    def imdetect(self,imgpath,path=None):
+        for src in sources:
+            try:im = LoadImages(src,
+                    img_size=self._imgsz,
+                    stride=self.stride,
+                    auto=self.pt,
+                    image_sort=self.image_sort,
+                    reverse=self.reverse)
+            except AssertionError as AE:
+                if self.recursive:
+                    continue
+                else:
+                    raise AE
+            for i in im:
+                yield i
+
+    def imdetect(self,imgpath,path=None):#TODO: prepend/append options
         '''run image detection on in memory image'''
         if type(imgpath) == type(np.zeros((0,0))):
             def dummy(im0,imgsz,stride,auto,path):
@@ -121,6 +142,7 @@ class ImageDetector():
         for path, im, im0s, vid_cap, s in processDataset:
             dt = [Profile(),]*3
             seen+=1
+            #TODO: if prepend/append then pad im with available previous image above/below.
             with dt[0]:
                 im = torch.from_numpy(im).to(self.model.device)
                 im = im.half() if self.half else im.float()  # uint8 to fp16/32
@@ -152,7 +174,7 @@ class ImageDetector():
                 if len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
-
+                    #TODO: if prepend/append then translate/clip detections appropriately
                 result = DetectionResult(im0,p,det,self.names)
                 # Print time (inference-only)
                 LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
