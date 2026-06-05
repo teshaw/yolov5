@@ -41,13 +41,13 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 import segment.val as validate  # for end-of-epoch mAP
-from models.experimental import attempt_load
-from models.yolo import SegmentationModel
-from utils.autoanchor import check_anchors
-from utils.autobatch import check_train_batch_size
-from utils.callbacks import Callbacks
-from utils.downloads import attempt_download, is_url
-from utils.general import (
+from yolov5.models.experimental import attempt_load
+from yolov5.models.yolo import SegmentationModel
+from yolov5.utils.autoanchor import check_anchors
+from yolov5.utils.autobatch import check_train_batch_size
+from yolov5.utils.callbacks import Callbacks
+from yolov5.utils.downloads import attempt_download, is_url
+from yolov5.utils.general import (
     LOGGER,
     TQDM_BAR_FORMAT,
     check_amp,
@@ -72,13 +72,13 @@ from utils.general import (
     strip_optimizer,
     yaml_save,
 )
-from utils.loggers import GenericLogger
-from utils.plots import plot_evolve, plot_labels
-from utils.segment.dataloaders import create_dataloader
-from utils.segment.loss import ComputeLoss
-from utils.segment.metrics import KEYS, fitness
-from utils.segment.plots import plot_images_and_masks, plot_results_with_masks
-from utils.torch_utils import (
+from yolov5.utils.loggers import GenericLogger
+from yolov5.utils.plots import plot_evolve, plot_labels
+from yolov5.utils.segment.dataloaders import create_dataloader
+from yolov5.utils.segment.loss import ComputeLoss
+from yolov5.utils.segment.metrics import KEYS, fitness
+from yolov5.utils.segment.plots import plot_images_and_masks, plot_results_with_masks
+from yolov5.utils.torch_utils import (
     EarlyStopping,
     ModelEMA,
     de_parallel,

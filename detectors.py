@@ -5,19 +5,21 @@ import torch
 import numpy as np
 from uuid import uuid4
 from tqdm import tqdm
+from _pickle import UnpicklingError
+import traceback
 
-from models.common import DetectMultiBackend
-from utils.dataloaders import LoadImages#,IMG_FORMATS,VID_FORMATS, LoadScreenshots, LoadStreams
-from utils.general import (LOGGER,set_logging,
+from yolov5.models.common import DetectMultiBackend
+from yolov5.utils.dataloaders import LoadImages#,IMG_FORMATS,VID_FORMATS, LoadScreenshots, LoadStreams
+from yolov5.utils.general import (LOGGER,set_logging,
                            Profile,check_img_size,
                            non_max_suppression,
                            scale_boxes,
                            xyxy2xywh)
-# from utils.general import (LOGGER,set_logging, Profile, check_file, check_imshow, check_requirements, colorstr, cv2 ,
+# from yolov5.utils.general import (LOGGER,set_logging, Profile, check_file, check_imshow, check_requirements, colorstr, cv2 ,
 #                            increment_path, , print_args, , strip_optimizer, )
-from utils.plots import Annotator, colors, save_one_box
-from utils.torch_utils import select_device#, smart_inference_mode
-from utils.augmentations import letterbox
+from yolov5.utils.plots import Annotator, colors, save_one_box
+from yolov5.utils.torch_utils import select_device#, smart_inference_mode
+from yolov5.utils.augmentations import letterbox
 
 def sorter(fp,default=1E9,start=0,end=1E9):
     '''basic example sorter, which extracts a key from the filename.
@@ -75,12 +77,18 @@ class ImageDetector():
         self.verbose=True
         self.recursive=False
         #TODO: means of checking for existing labels...
+        try:
+            self.__load_model__()
+        except UnpicklingError:
+            self.__load_model__(weights_only=False)
+        except FileNotFoundError:
+            traceback.print_exc()
 
-        self.__load_model__()
 
-    def __load_model__(self):
+    def __load_model__(self,weights_only=True):
         device = select_device(self.device)
         self.model = DetectMultiBackend(self.weights,
+                                        weights_only=weights_only,
                                         device=device,
                                         dnn=self.dnn,
                                         data=self.data,

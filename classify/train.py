@@ -36,11 +36,11 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-from classify import val as validate
-from models.experimental import attempt_load
-from models.yolo import ClassificationModel, DetectionModel
-from utils.dataloaders import create_classification_dataloader
-from utils.general import (
+from yolov5.classify import val as validate
+from yolov5.models.experimental import attempt_load
+from yolov5.models.yolo import ClassificationModel, DetectionModel
+from yolov5.utils.dataloaders import create_classification_dataloader
+from yolov5.utils.general import (
     DATASETS_DIR,
     LOGGER,
     TQDM_BAR_FORMAT,
@@ -55,9 +55,9 @@ from utils.general import (
     print_args,
     yaml_save,
 )
-from utils.loggers import GenericLogger
-from utils.plots import imshow_cls
-from utils.torch_utils import (
+from yolov5.utils.loggers import GenericLogger
+from yolov5.utils.plots import imshow_cls
+from yolov5.utils.torch_utils import (
     ModelEMA,
     de_parallel,
     model_info,

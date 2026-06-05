@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from utils.downloads import attempt_download
+from yolov5.utils.downloads import attempt_download
 
 
 class Sum(nn.Module):
@@ -85,17 +85,17 @@ class Ensemble(nn.ModuleList):
         return y, None  # inference, train output
 
 
-def attempt_load(weights, device=None, inplace=True, fuse=True):
+def attempt_load(weights, weights_only=True, device=None, inplace=True, fuse=True):
     """
     Loads and fuses an ensemble or single YOLOv5 model from weights, handling device placement and model adjustments.
 
     Example inputs: weights=[a,b,c] or a single model weights=[a] or weights=a.
     """
-    from models.yolo import Detect, Model
+    from yolov5.models.yolo import Detect, Model
 
     model = Ensemble()
     for w in weights if isinstance(weights, list) else [weights]:
-        ckpt = torch.load(attempt_download(w), map_location="cpu")  # load
+        ckpt = torch.load(attempt_download(w), map_location="cpu", weights_only=weights_only)  # load
         ckpt = (ckpt.get("ema") or ckpt["model"]).to(device).float()  # FP32 model
 
         # Model compatibility updates
